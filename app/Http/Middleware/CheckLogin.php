@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Redis;
+
+class CheckLogin
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
+    public function handle($request, Closure $next)
+    {
+
+        $_SERVER['id'] = 0;        //默认未登录
+        $token = Cookie::get('token');
+
+        if($token)
+        {
+            //$token = Crypt::decryptString($token);        //解密cookie
+            $token_key = 'h:login_info:'.$token;
+            $u = Redis::hGetAll($token_key);
+
+            if(isset($u['id']))        // 登录有效
+            {
+                $_SERVER['id'] = $u['id'];
+                $_SERVER['name'] = $u['name'];
+                $_SERVER['token'] = $token;
+            }
+        }
+
+
+        return $next($request);
+    }
+}
